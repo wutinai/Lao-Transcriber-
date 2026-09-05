@@ -43,7 +43,7 @@ export const AudioUploader: React.FC<AudioUploaderProps> = ({
 
   // Settings / Hints
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [modelChoice, setModelChoice] = useState<'gemini-3.5-transcribe' | 'gemini-3.8-flash'>('gemini-3.5-transcribe');
+  const [modelChoice, setModelChoice] = useState<'gemini-3.5-transcribe' | 'gemini-3.1-flash-lite' | 'gemini-3.8-flash'>('gemini-3.5-transcribe');
   const [contextHint, setContextHint] = useState('');
   const [speakersHint, setSpeakersHint] = useState('');
 
@@ -380,6 +380,7 @@ export const AudioUploader: React.FC<AudioUploaderProps> = ({
                 className="w-full bg-[#1a1a1a] border border-[#333] rounded-md p-2 text-gray-200 focus:outline-none focus:border-indigo-500"
               >
                 <option value="gemini-3.5-transcribe">gemini-3.5-transcribe (ແນະນຳສຳລັບສຽງ)</option>
+                <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite (ໄວ ແລະ ໝັ້ນຄົງ)</option>
                 <option value="gemini-3.8-flash">gemini-3.8-flash (Multi-modal Flash)</option>
               </select>
             </div>

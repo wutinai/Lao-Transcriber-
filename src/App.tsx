@@ -103,21 +103,36 @@ export default function App() {
       // Convert to base64
       const base64Data = await fileToBase64(fileOrBlob);
 
-      const response = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audioBase64: base64Data,
-          mimeType,
-          options,
-        }),
-      });
+      let response: Response;
+      try {
+        response = await fetch('/api/transcribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            audioBase64: base64Data,
+            mimeType,
+            options,
+          }),
+        });
+      } catch (networkErr: any) {
+        throw new Error('ບໍ່ສາມາດເຊື່ອມຕໍ່ກັບເຊີເວີໄດ້ (Network connection failed) - ກະລຸນາກວດສອບການເຊື່ອມຕໍ່');
+      }
 
       if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || `Server responded with status ${response.status}`);
+        let errDetail = `ເຊີເວີຕອບກັບດ້ວຍລະຫັດ ${response.status}`;
+        try {
+          const errJson = await response.json();
+          if (errJson?.error) {
+            errDetail = errJson.error;
+          }
+        } catch {
+          if (response.status === 404) {
+            errDetail = 'ບໍ່ພົບ API Endpoint (/api/transcribe 404) - ກະລຸນາກວດສອບເຊີເວີ ຫຼື ລອງໃໝ່ອີກຄັ້ງ';
+          }
+        }
+        throw new Error(errDetail);
       }
 
       const resData = await response.json();

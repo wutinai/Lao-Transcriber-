@@ -7,9 +7,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const PORT = 3000;
 
 // Lazy initialization of Gemini client
@@ -108,38 +105,48 @@ Output strictly valid JSON with this format:
   ]
 }`;
 
-      // Model preference: user requested gemini-3.5-transcribe
-      const preferredModel = options.model || 'gemini-3.5-transcribe';
-      const fallbackModel = 'gemini-3.8-flash';
+      // Model candidates: prioritize user choice or gemini-3.5-transcribe, with robust fallbacks to gemini-3.1-flash-lite and gemini-3.8-flash
+      const candidateModels = Array.from(
+        new Set([
+          options.model || 'gemini-3.5-transcribe',
+          'gemini-3.1-flash-lite',
+          'gemini-3.8-flash',
+        ])
+      );
 
       let responseText = '';
-      let usedModel = preferredModel;
+      let usedModel = candidateModels[0];
+      let lastError: any = null;
 
-      try {
-        console.log(`[Transcribe] Calling model: ${preferredModel}`);
-        const response = await ai.models.generateContent({
-          model: preferredModel,
-          contents: {
-            parts: [audioPart, { text: `${systemPrompt}\n\n${userInstruction}` }],
-          },
-          config: {
-            responseMimeType: 'application/json',
-          },
-        });
-        responseText = response.text || '';
-      } catch (err: any) {
-        console.warn(`[Transcribe] Failed with ${preferredModel}, trying fallback ${fallbackModel}:`, err?.message);
-        usedModel = fallbackModel;
-        const response = await ai.models.generateContent({
-          model: fallbackModel,
-          contents: {
-            parts: [audioPart, { text: `${systemPrompt}\n\n${userInstruction}` }],
-          },
-          config: {
-            responseMimeType: 'application/json',
-          },
-        });
-        responseText = response.text || '';
+      for (const modelName of candidateModels) {
+        try {
+          console.log(`[Transcribe] Attempting transcription with model: ${modelName}`);
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: {
+              parts: [audioPart, { text: `${systemPrompt}\n\n${userInstruction}` }],
+            },
+            config: {
+              responseMimeType: 'application/json',
+            },
+          });
+          responseText = response.text || '';
+          usedModel = modelName;
+          console.log(`[Transcribe] Successfully transcribed with: ${modelName}`);
+          break;
+        } catch (err: any) {
+          console.warn(`[Transcribe] Model ${modelName} failed:`, err?.status || err?.message || err);
+          lastError = err;
+        }
+      }
+
+      if (!responseText && lastError) {
+        let msg = lastError?.message || 'ບໍ່ສາມາດເຊື່ອມຕໍ່ກັບລະບົບ AI ໄດ້';
+        try {
+          const parsed = JSON.parse(msg);
+          if (parsed?.error?.message) msg = parsed.error.message;
+        } catch {}
+        throw new Error(msg);
       }
 
       // Parse JSON
@@ -225,8 +232,15 @@ Output strictly valid JSON with this format:
       });
     } catch (error: any) {
       console.error('[Transcribe API Error]:', error);
+      let errMsg = error?.message || 'ເກີດຂໍ້ຜິດພາດໃນການຖອດສຽງ (Failed to transcribe audio)';
+      try {
+        const parsed = JSON.parse(errMsg);
+        if (parsed?.error?.message) {
+          errMsg = parsed.error.message;
+        }
+      } catch {}
       return res.status(500).json({
-        error: error?.message || 'ເກີດຂໍ້ຜິດພາດໃນການຖອດສຽງ (Failed to transcribe audio)',
+        error: errMsg,
       });
     }
   });
