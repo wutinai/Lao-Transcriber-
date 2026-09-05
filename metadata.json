@@ -1,0 +1,6 @@
+{
+  "name": "ລະບົບຖອດສຽງພາສາລາວ - Lao Audio Transcriber",
+  "description": "ລະບົບຖອດຂໍ້ຄວາມສຽງຈາກໄຟລ໌ ແລະ ໄມໂຄຣໂຟນ ແຍກຜູ້ເວົ້າຢ່າງຊັດເຈນເປັນພາສາລາວ ພ້ອມດາວໂຫຼດ Word (.docx) ແລະ Docs",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
